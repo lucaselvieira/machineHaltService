@@ -115,7 +115,7 @@ Este é um serviço REST para monitorar paradas de máquinas, criado utilizando 
 
 2. Crie e ative um ambiente virtual:
    ```bash
-   python3 -m venv venv
+   python -m venv venv
    source venv/bin/activate  # No Windows, use `venv\Scripts\activate`
    ```
 
