@@ -109,8 +109,8 @@ Este é um serviço REST para monitorar paradas de máquinas, criado utilizando 
 
 1. Clone o repositório:
    ```bash
-   git clone https://github.com/seu-usuario/nome-do-repositorio.git
-   cd nome-do-repositorio
+   git clone https://github.com/lucaselvieira/machineHaltService.git
+   cd machineHaltService
    ```
 
 2. Crie e ative um ambiente virtual:
@@ -139,21 +139,9 @@ Este é um serviço REST para monitorar paradas de máquinas, criado utilizando 
    ```bash
    python -m unittest discover -s tests
    ```
-
-## Contribuição
-
-1. Fork este repositório.
-2. Crie uma branch para sua feature (`git checkout -b feature/fooBar`).
-3. Commit suas mudanças (`git commit -am 'Add some fooBar'`).
-4. Push para a branch (`git push origin feature/fooBar`).
-5. Crie um novo Pull Request.
-
-## Licença
-
-Distribuído sob a licença MIT. Veja `LICENSE` para mais informações.
-
+   
 ## Contato
 
-Seu Nome - [Seu Email](mailto:seu-email@example.com)
+Lucas E Lopes Vieira - [Email](mailto:lucaselvieira@gmail.com)
 
-Link do Projeto: [https://github.com/seu-usuario/nome-do-repositorio](https://github.com/seu-usuario/nome-do-repositorio)
+Link do Projeto: [https://github.com/lucaselvieira/machineHaltService.git](https://github.com/lucaselvieira/machineHaltService.git)
