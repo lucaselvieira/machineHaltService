@@ -1,91 +1,93 @@
 from flask import Flask, request, jsonify
-from datetime import datetime, timezone
+from marshmallow import ValidationError
 
-app = Flask(__name__)
-
-machine_halts = []
-current_id = 1
-
-
-def get_machine_halt_by_id(halt_id):
-    return next((h for h in machine_halts if h['id'] == halt_id), None)
-
-
-def parse_iso_datetime(date_str):
-    return datetime.fromisoformat(date_str.replace('Z', '+00:00')).replace(tzinfo=timezone.utc)
+from config import Config
+from machine_halt.models import db
+from machine_halt.schemas import MachineHaltSchema
+from machine_halt.services import (
+    create_machine_halt, get_machine_halt_by_id, list_machine_halts,
+    update_machine_halt_end_time, update_machine_halt_reason, delete_all_halts, parse_iso_datetime
+)
 
 
-@app.route('/machine-halt', methods=['POST'])
-def create_halt():
-    global current_id
-    data = request.get_json()
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
+    db.init_app(app)
 
-    # Validate input
-    if 'machine_tag' not in data or 'start_time' not in data:
-        return jsonify({"error": "machine_tag and start_time are required"}), 400
+    with app.app_context():
+        db.create_all()
 
-    new_halt = {
-        "id": current_id,
-        "machine_tag": data['machine_tag'],
-        "start_time": data['start_time'],
-        "end_time": None,
-        "reason": ""
-    }
-    machine_halts.append(new_halt)
-    current_id += 1
-    return jsonify(new_halt), 201
+    machine_halt_schema = MachineHaltSchema()
+    machine_halts_schema = MachineHaltSchema(many=True)
 
+    @app.route('/machine-halt', methods=['POST'])
+    def create_halt():
+        try:
+            data = request.get_json()
+            data['start_time'] = parse_iso_datetime(data['start_time'])
+            halt = create_machine_halt(data)
+            return jsonify(machine_halt_schema.dump(halt)), 201
+        except ValidationError as err:
+            return jsonify(err.messages), 400
+        except (ValueError, TypeError) as err:
+            return jsonify({'message': str(err)}), 400
 
-@app.route('/machine-halt/<int:id>', methods=['GET'])
-def get_halt(id):
-    halt = get_machine_halt_by_id(id)
-    if halt is None:
-        return jsonify({"error": "Machine halt not found"}), 404
-    return jsonify(halt), 200
+    @app.route('/machine-halt/<int:halt_id>', methods=['GET'])
+    def get_halt(halt_id):
+        halt = get_machine_halt_by_id(halt_id)
+        if halt is None:
+            return jsonify({'message': 'Halt not found'}), 404
+        return jsonify(machine_halt_schema.dump(halt))
 
+    @app.route('/machine-halt/list', methods=['GET'])
+    def list_halts():
+        machine_tag = request.args.get('machine_tag')
+        interval_start = request.args.get('interval_start')
+        interval_end = request.args.get('interval_end')
 
-@app.route('/machine-halt/list', methods=['GET'])
-def list_halts():
-    machine_tag = request.args.get('machine_tag')
-    interval_start = request.args.get('interval_start')
-    interval_end = request.args.get('interval_end')
+        if not machine_tag or not interval_start or not interval_end:
+            return jsonify({"error": "machine_tag, interval_start, and interval_end are required"}), 400
 
-    if not machine_tag or not interval_start or not interval_end:
-        return jsonify({"error": "machine_tag, interval_start, and interval_end are required"}), 400
+        try:
+            interval_start = parse_iso_datetime(interval_start)
+            interval_end = parse_iso_datetime(interval_end)
+        except (ValueError, TypeError):
+            return jsonify({'message': 'Invalid date format'}), 400
 
-    interval_start = parse_iso_datetime(interval_start)
-    interval_end = parse_iso_datetime(interval_end)
+        halts = list_machine_halts(machine_tag, interval_start, interval_end)
+        return jsonify(machine_halts_schema.dump(halts))
 
-    filtered_halts = [
-        h for h in machine_halts if h['machine_tag'] == machine_tag and
-                                    (interval_start <= parse_iso_datetime(h['start_time']) <= interval_end or
-                                     (h['end_time'] and interval_start <= parse_iso_datetime(
-                                         h['end_time']) <= interval_end))
-    ]
-    return jsonify(filtered_halts), 200
+    @app.route('/machine-halt', methods=['PUT'])
+    def update_halt():
+        data = request.get_json()
+        halt_id = data.get('id')
+        end_time = data.get('end_time')
+        reason = data.get('reason')
 
+        if end_time and reason is None:
+            try:
+                end_time = parse_iso_datetime(end_time)
+            except (ValueError, TypeError):
+                return jsonify({'message': 'Invalid date format'}), 400
+            halt = update_machine_halt_end_time(halt_id, end_time)
+        elif reason and end_time is None:
+            halt = update_machine_halt_reason(halt_id, reason)
+        else:
+            return jsonify({'message': 'or end_time or reason required'}), 400
 
-@app.route('/machine-halt', methods=['PUT'])
-def update_halt():
-    data = request.get_json()
-    halt = get_machine_halt_by_id(data['id'])
-    if halt is None:
-        return jsonify({"error": "Machine halt not found"}), 404
+        if halt is None:
+            return jsonify({'message': 'Halt not found'}), 404
+        return jsonify(machine_halt_schema.dump(halt))
 
-    if 'end_time' in data:
-        halt['end_time'] = data['end_time']
-    if 'reason' in data:
-        halt['reason'] = data['reason']
-    return jsonify(halt), 200
+    @app.route('/machine-halt/all', methods=['DELETE'])
+    def delete_halts():
+        delete_all_halts()
+        return '', 204
 
-
-@app.route('/machine-halt/all', methods=['DELETE'])
-def delete_all_halts():
-    global machine_halts, current_id
-    machine_halts.clear()
-    current_id = 1
-    return '', 204
+    return app
 
 
 if __name__ == '__main__':
+    app = create_app()
     app.run(debug=True)

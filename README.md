@@ -5,6 +5,14 @@
 
 Este é um serviço REST para monitorar paradas de máquinas, criado utilizando Flask. Ele permite criar, listar, atualizar e deletar registros de paradas de máquinas (ver detalhes na sessão de Endpoints). Inicialmente, o serviço armazena os dados na memória, mas está preparado para ser atualizado para usar um banco de dados no futuro.
 
+## Funcionalidades
+
+- **Criar Parada de Máquina**: Permite criar uma nova parada de máquina.
+- **Obter Parada de Máquina**: Permite obter detalhes de uma parada de máquina específica pelo ID.
+- **Listar Paradas de Máquinas**: Permite listar paradas de uma determinada máquina dentro de um intervalo de tempo.
+- **Atualizar Parada de Máquina**: Permite atualizar ou o tempo de término ou a razão da parada de uma máquina.
+- **Excluir Todas as Paradas**: Permite excluir todas as paradas de máquinas.
+
 ## Endpoints
 
 ### Criar uma nova parada de máquina
@@ -13,8 +21,8 @@ Este é um serviço REST para monitorar paradas de máquinas, criado utilizando 
 - **Corpo da Requisição:**
   ```json
   {
-    "machine_tag": "string",  // identificador da máquina
-    "start_time": "datetime"  // tempo de início da parada (formato ISO 8601)
+    "machine_tag": "string",  //identificador da máquina
+    "start_time": "datetime"  //tempo de início da parada (formato ISO 8601)
   }
   ```
 - **Resposta de Sucesso:**
@@ -68,15 +76,14 @@ Este é um serviço REST para monitorar paradas de máquinas, criado utilizando 
     ]
     ```
 
-### Atualizar uma parada de máquina
+### Finalizar uma parada de máquina
 - **URL:** `/machine-halt`
 - **Método:** `PUT`
 - **Corpo da Requisição:**
   ```json
   {
     "id": "int",          // identificador da parada
-    "end_time": "datetime",  // (tempo de finalização da parada (formato ISO 8601)) - (opcional)
-    "reason": "string"    // motivo da parada (opcional)
+    "end_time": "datetime",  // (tempo de finalização da parada (formato ISO 8601))
   }
   ```
 - **Resposta de Sucesso:**
@@ -91,6 +98,27 @@ Este é um serviço REST para monitorar paradas de máquinas, criado utilizando 
       "reason": "string"
     }
     ```
+### Alterar o motivo para da parada
+- **URL:** `/machine-halt`
+- **Método:** `PUT`
+- **Corpo da Requisição:**
+  ```json
+  {
+    "id": "int",          // identificador da parada
+    "reason": "string"    // motivo da parada
+  }
+  ```
+- **Resposta de Sucesso:**
+  - **Código:** `200 OK`
+  - **Corpo:**
+    ```json
+    {
+      "id": "int",
+      "machine_tag": "string",
+      "start_time": "datetime",
+      "end_time": "datetime or null",
+      "reason": "string"
+    }    
 
 ### Deletar todas as paradas de máquinas
 - **URL:** `/machine-halt/all`
@@ -102,8 +130,10 @@ Este é um serviço REST para monitorar paradas de máquinas, criado utilizando 
 
 ### Pré-requisitos
 
-- Python 3.6 ou superior
-- pip
+- Python 3.x
+- Flask
+- Flask-SQLAlchemy
+- Marshmallow
 
 ### Instalação
 
@@ -132,14 +162,7 @@ Este é um serviço REST para monitorar paradas de máquinas, criado utilizando 
    ```
 
 2. O serviço estará disponível em `http://127.0.0.1:5000`.
-
-### Testes
-
-1. Para rodar os testes, execute:
-   ```bash
-   python -m unittest discover -s tests
-   ```
-   
+ 
 ## Contato
 
 Lucas E Lopes Vieira - [Email](mailto:lucaselvieira@gmail.com)
